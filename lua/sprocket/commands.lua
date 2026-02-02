@@ -67,7 +67,8 @@ local subcommands = {
   format = {
     desc = "Format WDL file",
     run = function(args)
-      local path = args[1] or vim.api.nvim_buf_get_name(0)
+      local bufnr = vim.api.nvim_get_current_buf()
+      local path = args[1] or vim.api.nvim_buf_get_name(bufnr)
       if path == "" then
         vim.notify(
           "[sprocket] No file specified and current buffer has no path",
@@ -75,7 +76,31 @@ local subcommands = {
         )
         return
       end
-      run_sprocket({ "format", "overwrite", path })
+
+      local binary = require("sprocket.binary")
+      local bin_path = binary.get_path()
+      if not bin_path then
+        vim.notify("[sprocket] Binary not found", vim.log.levels.ERROR)
+        return
+      end
+
+      vim.system({ bin_path, "format", "view", path }, { text = true }, function(result)
+        vim.schedule(function()
+          if result.code == 0 and result.stdout then
+            local lines = vim.split(result.stdout, "\n", { plain = true })
+            if lines[#lines] == "" then
+              table.remove(lines)
+            end
+            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+            vim.api.nvim_buf_call(bufnr, function()
+              vim.cmd.write()
+            end)
+          else
+            local msg = result.stderr ~= "" and result.stderr or "Format failed"
+            vim.notify(msg, vim.log.levels.ERROR)
+          end
+        end)
+      end)
     end,
   },
 
