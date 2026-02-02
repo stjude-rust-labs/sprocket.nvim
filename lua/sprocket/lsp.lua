@@ -84,7 +84,11 @@ function M.setup()
       setup_in_progress = false
       status.set("error", "Binary not found")
       vim.schedule(function()
-        pcall(vim.notify, "[sprocket] Binary not found. Run :Sprocket update or install manually.", vim.log.levels.WARN)
+        pcall(
+          vim.notify,
+          "[sprocket] Binary not found. Run :Sprocket update or install manually.",
+          vim.log.levels.WARN
+        )
       end)
       return
     end
@@ -144,7 +148,11 @@ function M.setup()
               vim.schedule(function()
                 pcall(
                   vim.notify,
-                  string.format("[sprocket] Update available: %s -> %s. Run :Sprocket update", current, latest),
+                  string.format(
+                    "[sprocket] Update available: %s -> %s. Run :Sprocket update",
+                    current,
+                    latest
+                  ),
                   vim.log.levels.INFO
                 )
               end)

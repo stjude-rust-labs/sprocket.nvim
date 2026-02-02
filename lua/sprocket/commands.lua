@@ -54,7 +54,10 @@ local subcommands = {
     run = function(args)
       local path = args[1] or vim.api.nvim_buf_get_name(0)
       if path == "" then
-        vim.notify("[sprocket] No file specified and current buffer has no path", vim.log.levels.ERROR)
+        vim.notify(
+          "[sprocket] No file specified and current buffer has no path",
+          vim.log.levels.ERROR
+        )
         return
       end
       run_sprocket({ "check", path })
@@ -66,7 +69,10 @@ local subcommands = {
     run = function(args)
       local path = args[1] or vim.api.nvim_buf_get_name(0)
       if path == "" then
-        vim.notify("[sprocket] No file specified and current buffer has no path", vim.log.levels.ERROR)
+        vim.notify(
+          "[sprocket] No file specified and current buffer has no path",
+          vim.log.levels.ERROR
+        )
         return
       end
       run_sprocket({ "format", "overwrite", path })
@@ -78,7 +84,10 @@ local subcommands = {
     run = function(args)
       local path = args[1] or vim.api.nvim_buf_get_name(0)
       if path == "" then
-        vim.notify("[sprocket] No file specified and current buffer has no path", vim.log.levels.ERROR)
+        vim.notify(
+          "[sprocket] No file specified and current buffer has no path",
+          vim.log.levels.ERROR
+        )
         return
       end
       run_sprocket({ "lint", path })
@@ -150,7 +159,10 @@ function M.setup()
 
     if not subcmd then
       vim.notify("[sprocket] Usage: :Sprocket <subcommand>", vim.log.levels.INFO)
-      vim.notify("Available: " .. table.concat(vim.tbl_keys(subcommands), ", "), vim.log.levels.INFO)
+      vim.notify(
+        "Available: " .. table.concat(vim.tbl_keys(subcommands), ", "),
+        vim.log.levels.INFO
+      )
       return
     end
 

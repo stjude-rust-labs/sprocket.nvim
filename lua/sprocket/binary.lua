@@ -48,7 +48,10 @@ function M.get_path()
     if vim.fn.executable(config.binary.path) == 1 then
       return config.binary.path
     end
-    vim.notify("[sprocket] Configured binary not found: " .. config.binary.path, vim.log.levels.WARN)
+    vim.notify(
+      "[sprocket] Configured binary not found: " .. config.binary.path,
+      vim.log.levels.WARN
+    )
   end
 
   -- 2. Auto-installed binary
@@ -127,42 +130,38 @@ function M.download(version, callback)
     vim.fn.mkdir(bin_dir, "p")
     vim.notify("[sprocket] Downloading " .. version .. "...", vim.log.levels.INFO)
 
-    vim.system(
-      { "curl", "-sL", "--max-time", "120", "-o", archive_path, url },
-      {},
-      function(result)
-        if result.code ~= 0 then
-          vim.schedule(function()
-            callback(false, "Download failed")
-          end)
-          return
-        end
-
-        local extract_cmd
-        if ext == "tar.gz" then
-          extract_cmd = { "tar", "-xzf", archive_path, "-C", bin_dir }
-        else
-          extract_cmd = { "unzip", "-o", archive_path, "-d", bin_dir }
-        end
-
-        vim.system(extract_cmd, { text = true }, function(extract_result)
-          vim.schedule(function()
-            vim.fn.delete(archive_path)
-
-            if extract_result.code ~= 0 then
-              local err_msg = extract_result.stderr or "unknown error"
-              vim.notify("[sprocket] Extraction failed: " .. err_msg, vim.log.levels.ERROR)
-              callback(false, "Extraction failed: " .. err_msg)
-              return
-            end
-
-            vim.fn.setfperm(bin_path, "rwxr-xr-x")
-            vim.notify("[sprocket] Installed version " .. version, vim.log.levels.INFO)
-            callback(true, nil)
-          end)
+    vim.system({ "curl", "-sL", "--max-time", "120", "-o", archive_path, url }, {}, function(result)
+      if result.code ~= 0 then
+        vim.schedule(function()
+          callback(false, "Download failed")
         end)
+        return
       end
-    )
+
+      local extract_cmd
+      if ext == "tar.gz" then
+        extract_cmd = { "tar", "-xzf", archive_path, "-C", bin_dir }
+      else
+        extract_cmd = { "unzip", "-o", archive_path, "-d", bin_dir }
+      end
+
+      vim.system(extract_cmd, { text = true }, function(extract_result)
+        vim.schedule(function()
+          vim.fn.delete(archive_path)
+
+          if extract_result.code ~= 0 then
+            local err_msg = extract_result.stderr or "unknown error"
+            vim.notify("[sprocket] Extraction failed: " .. err_msg, vim.log.levels.ERROR)
+            callback(false, "Extraction failed: " .. err_msg)
+            return
+          end
+
+          vim.fn.setfperm(bin_path, "rwxr-xr-x")
+          vim.notify("[sprocket] Installed version " .. version, vim.log.levels.INFO)
+          callback(true, nil)
+        end)
+      end)
+    end)
   end)
 end
 
