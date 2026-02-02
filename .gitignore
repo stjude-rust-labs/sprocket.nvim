@@ -1,0 +1,13 @@
+# Generated files
+doc/tags
+
+# macOS
+.DS_Store
+
+# Neovim
+*.swp
+*.swo
+*~
+
+# Local development
+.luarc.json

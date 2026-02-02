@@ -1,0 +1,275 @@
+*sprocket.txt*  WDL language support for Neovim
+
+Author:   St. Jude Rust Labs
+License:  MIT OR Apache-2.0
+
+==============================================================================
+CONTENTS                                                    *sprocket-contents*
+
+    1. Introduction .......................... |sprocket-introduction|
+    2. Requirements .......................... |sprocket-requirements|
+    3. Installation .......................... |sprocket-installation|
+    4. Configuration ......................... |sprocket-configuration|
+    5. LSP Configuration ..................... |sprocket-lsp|
+    6. Keymaps ............................... |sprocket-keymaps|
+    7. Commands .............................. |sprocket-commands|
+    8. Statusline ............................ |sprocket-statusline|
+    9. Health Check .......................... |sprocket-health|
+   10. Troubleshooting ....................... |sprocket-troubleshooting|
+
+==============================================================================
+INTRODUCTION                                            *sprocket-introduction*
+
+sprocket.nvim provides WDL (Workflow Description Language) support for
+Neovim via the Sprocket LSP server. It includes:
+
+- LSP integration (completion, diagnostics, hover, go-to-definition, etc.)
+- Syntax highlighting for WDL 1.0-1.3
+- Document formatting
+- Commands for common sprocket operations
+- Automatic binary management
+- Integration with `nvim-autopairs` and `Comment.nvim`
+
+==============================================================================
+REQUIREMENTS                                            *sprocket-requirements*
+
+- Neovim 0.11+
+- `sprocket` binary (can be auto-installed via config)
+- `curl` (for auto-installation)
+- `tar` or `unzip` (for extraction)
+
+Optional:
+- `nvim-cmp` and `cmp-nvim-lsp` for enhanced completion
+- `nvim-autopairs` for auto-closing pairs
+- `Comment.nvim` for commenting support
+
+==============================================================================
+INSTALLATION                                            *sprocket-installation*
+
+Using `lazy.nvim`: >lua
+
+    {
+      "stjude-rust-labs/sprocket.nvim",
+      ft = "wdl",
+      opts = {},
+    }
+<
+
+==============================================================================
+CONFIGURATION                                          *sprocket-configuration*
+
+Call `require("sprocket").setup(opts)` with a table of options:
+
+>lua
+    require("sprocket").setup({
+      binary = {
+        path = nil,            -- Custom path to sprocket binary
+        auto_install = false,  -- Auto-download if not found
+        check_updates = false, -- Check for updates on startup
+      },
+      server = {
+        lint = false,        -- Enable `--lint` flag
+        log_level = "quiet", -- "quiet" | "info" | "verbose"
+      },
+      format_on_save = false,  -- Auto-format WDL files on save
+      status = {
+        enabled = true, -- Enable statusline component
+        icons = {
+          ok = "󰗡",
+          warning = "",
+          error = "",
+          loading = "󰑮",
+        },
+      },
+      lsp = {
+        capabilities = nil, -- Custom LSP capabilities
+        on_attach = nil,    -- Custom on_attach function
+        handlers = nil,     -- Custom LSP handlers
+      },
+    })
+<
+
+                                                          *sprocket.binary.path*
+binary.path ~
+    Path to a custom sprocket binary. Takes precedence over all other
+    methods of locating the binary.
+
+                                                  *sprocket.binary.auto_install*
+binary.auto_install ~
+    If `true` and no binary is found, automatically download from GitHub.
+
+                                                 *sprocket.binary.check_updates*
+binary.check_updates ~
+    If `true`, check for newer versions on startup and notify if available.
+
+                                                          *sprocket.server.lint*
+server.lint ~
+    If `true`, enable additional linting rules via the `--lint` flag.
+
+                                                     *sprocket.server.log_level*
+server.log_level ~
+    Server logging verbosity: `"quiet"`, `"info"`, or `"verbose"`.
+
+                                                        *sprocket.format_on_save*
+format_on_save ~
+    If `true`, automatically format WDL files before saving.
+
+==============================================================================
+LSP CONFIGURATION                                              *sprocket-lsp*
+
+The `lsp` table allows customization of the LSP client:
+
+                                                      *sprocket.lsp.capabilities*
+lsp.capabilities ~
+    Custom capabilities table or function returning capabilities. If not
+    specified, defaults to `vim.lsp.protocol.make_client_capabilities()`.
+    If `cmp-nvim-lsp` is installed, its capabilities are automatically added.
+
+    Example: >lua
+        lsp = {
+          capabilities = require("cmp_nvim_lsp").default_capabilities(),
+        }
+<
+
+                                                         *sprocket.lsp.on_attach*
+lsp.on_attach ~
+    Function called when the LSP attaches to a buffer. Use this to set up
+    custom keymaps or buffer-local settings.
+
+    Example: >lua
+        lsp = {
+          on_attach = function(client, bufnr)
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, { buffer = bufnr })
+          end,
+        }
+<
+
+                                                          *sprocket.lsp.handlers*
+lsp.handlers ~
+    Custom LSP handlers table. Merged with default handlers.
+
+==============================================================================
+KEYMAPS                                                      *sprocket-keymaps*
+
+No keymaps are set by default. Use `lsp.on_attach` to define your own:
+
+>lua
+    {
+      "stjude-rust-labs/sprocket.nvim",
+      ft = "wdl",
+      opts = {
+        lsp = {
+          on_attach = function(client, bufnr)
+            local opts = function(desc)
+              return { buffer = bufnr, desc = desc }
+            end
+
+            -- Navigation
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts("Definition"))
+            vim.keymap.set("n", "gr", vim.lsp.buf.references, opts("References"))
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts("Hover"))
+
+            -- Refactoring
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts("Rename"))
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts("Action"))
+            vim.keymap.set("n", "<leader>f", function()
+              vim.lsp.buf.format({ async = true })
+            end, opts("Format"))
+
+            -- Diagnostics
+            vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts("Prev diag"))
+            vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts("Next diag"))
+          end,
+        },
+      },
+    }
+<
+
+==============================================================================
+COMMANDS                                                    *sprocket-commands*
+
+All commands use the `:Sprocket` prefix with subcommands.
+
+:Sprocket info                                              *:Sprocket-info*
+    Display version, binary path, and server status in a floating window.
+    Press `q` or `<Esc>` to close.
+
+:Sprocket restart                                        *:Sprocket-restart*
+    Restart the LSP server.
+
+:Sprocket stop                                              *:Sprocket-stop*
+    Stop the LSP server.
+
+:Sprocket version                                        *:Sprocket-version*
+    Display the installed sprocket version and check for updates.
+
+:Sprocket update                                          *:Sprocket-update*
+    Check for and install the latest sprocket version.
+
+:Sprocket check [path]                                    *:Sprocket-check*
+    Validate a WDL file. Defaults to current buffer.
+
+:Sprocket lint [path]                                      *:Sprocket-lint*
+    Run linter on a WDL file. Defaults to current buffer.
+
+:Sprocket format [path]                                  *:Sprocket-format*
+    Format a WDL file. Defaults to current buffer.
+
+:Sprocket log                                                *:Sprocket-log*
+    Open the LSP log file for debugging.
+
+==============================================================================
+STATUSLINE                                                *sprocket-statusline*
+
+Add the status component to your statusline: >lua
+
+    -- lualine
+    lualine_x = { require("sprocket").status }
+<
+
+The component shows an icon indicating server status and hides when inactive:
+- 󰗡  Running normally
+-   Warning
+-   Error
+- 󰑮  Starting/loading
+
+==============================================================================
+HEALTH CHECK                                                  *sprocket-health*
+
+Run `:checkhealth sprocket` to verify your setup. This checks:
+
+- Neovim version
+- Binary availability and version
+- Required tools (`curl`, `tar`/`unzip`)
+- LSP client status
+- Optional dependencies (`cmp`)
+- Configuration settings
+
+==============================================================================
+TROUBLESHOOTING                                        *sprocket-troubleshooting*
+
+LSP not starting ~
+1. Check if sprocket is installed: `:Sprocket version`
+2. Check the LSP log: `:Sprocket log`
+3. Ensure the file has a `.wdl` extension
+4. Run `:checkhealth sprocket`
+5. Try restarting: `:Sprocket restart`
+
+No completions ~
+1. Ensure the LSP is running: `:Sprocket info`
+2. If using `nvim-cmp`, verify `cmp-nvim-lsp` is configured
+3. Check for syntax errors in your WDL file
+
+Formatting fails ~
+1. Check for syntax errors in the file
+2. Ensure sprocket is up to date: `:Sprocket update`
+3. Check the LSP log: `:Sprocket log`
+
+Auto-installation fails ~
+1. Ensure `curl` is installed and in `PATH`
+2. Ensure `tar` (Unix) or `unzip` (Windows) is available
+3. Check internet connectivity
+4. Try manual install from GitHub releases
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
