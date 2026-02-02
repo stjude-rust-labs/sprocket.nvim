@@ -12,8 +12,6 @@
   <p align="center">
     WDL language support for Neovim via the Sprocket LSP
     <br />
-    <a href="https://github.com/stjude-rust-labs/sprocket"><strong>Explore the docs »</strong></a>
-    <br />
     <br />
     <a href="https://github.com/stjude-rust-labs/sprocket.nvim/issues/new?labels=enhancement">Request Feature</a>
     ·
@@ -250,4 +248,4 @@ Licensed under either of
 
 at your option.
 
-Copyright © 2024-Present [St. Jude Children's Research Hospital](https://www.stjude.org/).
+Copyright © 2026-Present [St. Jude Children's Research Hospital](https://www.stjude.org/).
